@@ -5,7 +5,15 @@
 import 'package:flutter/material.dart';
 
 import 'theme/theme.dart';
+import 'utils.dart';
 import 'widget_preview_scaffold_controller.dart';
+
+enum _PreviewSearchFilter {
+  groupName,
+  previewName,
+  containingScript,
+  containingPackage,
+}
 
 /// Provides controls to change the zoom level of a [WidgetPreview].
 class ZoomControls extends StatelessWidget {
@@ -229,6 +237,196 @@ class WidgetPreviewerRestartButton extends StatelessWidget {
         onPressed: controller.dtdServices.hotRestartPreviewer,
         icon: Icon(Icons.restart_alt),
         color: Colors.black,
+      ),
+    );
+  }
+}
+
+class PreviewSearchControls extends StatefulWidget {
+  const PreviewSearchControls({super.key, required this.controller});
+
+  final WidgetPreviewScaffoldController controller;
+
+  @override
+  State<PreviewSearchControls> createState() => _PreviewSearchControlsState();
+}
+
+class _PreviewSearchControlsState extends State<PreviewSearchControls> {
+  late final TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController(
+      text: widget.controller.searchQueryListenable.value,
+    );
+    widget.controller.searchQueryListenable.addListener(
+      _syncControllerQueryToTextField,
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant PreviewSearchControls oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (identical(oldWidget.controller, widget.controller)) {
+      return;
+    }
+    oldWidget.controller.searchQueryListenable.removeListener(
+      _syncControllerQueryToTextField,
+    );
+    widget.controller.searchQueryListenable.addListener(
+      _syncControllerQueryToTextField,
+    );
+    _syncControllerQueryToTextField();
+  }
+
+  @override
+  void dispose() {
+    widget.controller.searchQueryListenable.removeListener(
+      _syncControllerQueryToTextField,
+    );
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _syncControllerQueryToTextField() {
+    final query = widget.controller.searchQueryListenable.value;
+    if (_searchController.text == query) {
+      return;
+    }
+
+    _searchController.value = _searchController.value.copyWith(
+      text: query,
+      selection: TextSelection.collapsed(offset: query.length),
+      composing: TextRange.empty,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return _ControlDecorator(
+      child: Row(
+        children: [
+          Expanded(
+            child: SizedBox(
+              height: defaultButtonHeight,
+              child: TextField(
+                controller: _searchController,
+                style: theme.regularTextStyleWithColor(Colors.black),
+                cursorColor: Colors.black,
+                textAlignVertical: TextAlignVertical.center,
+                onChanged: widget.controller.updateSearchQuery,
+                decoration: InputDecoration(
+                  isDense: true,
+                  hintText: 'Search previews',
+                  hintStyle: theme.regularTextStyleWithColor(Colors.black54),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                    vertical: densePadding,
+                    horizontal: denseSpacing,
+                  ),
+                  prefixIcon: Icon(
+                    Icons.search,
+                    size: defaultIconSize,
+                    color: Colors.black54,
+                  ),
+                  suffixIcon: ValueListenableBuilder<String>(
+                    valueListenable: widget.controller.searchQueryListenable,
+                    builder: (context, query, _) {
+                      if (query.isEmpty) {
+                        return const SizedBox.shrink();
+                      }
+                      return IconButton(
+                        tooltip: 'Clear search',
+                        style: theme.iconButtonTheme.style,
+                        visualDensity: VisualDensity.compact,
+                        icon: Icon(Icons.clear, size: defaultIconSize),
+                        color: Colors.black,
+                        onPressed: () {
+                          _searchController.clear();
+                          widget.controller.updateSearchQuery('');
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Container(height: 16, width: 1, color: Colors.black26),
+          ListenableBuilder(
+            listenable: Listenable.merge(<Listenable>[
+              widget.controller.searchByGroupNameListenable,
+              widget.controller.searchByPreviewNameListenable,
+              widget.controller.searchByContainingScriptListenable,
+              widget.controller.searchByContainingPackageListenable,
+            ]),
+            builder: (context, _) {
+              final allFiltersEnabled =
+                  widget.controller.searchByGroupNameListenable.value &&
+                  widget.controller.searchByPreviewNameListenable.value &&
+                  widget.controller.searchByContainingScriptListenable.value &&
+                  widget.controller.searchByContainingPackageListenable.value;
+              return PopupMenuButton<_PreviewSearchFilter>(
+                tooltip: 'Search fields',
+                style: theme.iconButtonTheme.style,
+                iconColor: allFiltersEnabled ? Colors.black : Colors.blue,
+                iconSize: defaultIconSize,
+                icon: const Icon(Icons.filter_list),
+                onSelected: (_PreviewSearchFilter selected) {
+                  switch (selected) {
+                    case _PreviewSearchFilter.groupName:
+                      widget.controller.toggleSearchByGroupName();
+                    case _PreviewSearchFilter.previewName:
+                      widget.controller.toggleSearchByPreviewName();
+                    case _PreviewSearchFilter.containingScript:
+                      widget.controller.toggleSearchByContainingScript();
+                    case _PreviewSearchFilter.containingPackage:
+                      widget.controller.toggleSearchByContainingPackage();
+                  }
+                },
+                itemBuilder: (context) {
+                  return [
+                    CheckedPopupMenuItem<_PreviewSearchFilter>(
+                      value: _PreviewSearchFilter.groupName,
+                      checked:
+                          widget.controller.searchByGroupNameListenable.value,
+                      child: const Text('Group name'),
+                    ),
+                    CheckedPopupMenuItem<_PreviewSearchFilter>(
+                      value: _PreviewSearchFilter.previewName,
+                      checked: widget
+                          .controller
+                          .searchByPreviewNameListenable
+                          .value,
+                      child: const Text('Preview name'),
+                    ),
+                    CheckedPopupMenuItem<_PreviewSearchFilter>(
+                      value: _PreviewSearchFilter.containingScript,
+                      checked: widget
+                          .controller
+                          .searchByContainingScriptListenable
+                          .value,
+                      child: const Text('Containing script'),
+                    ),
+                    CheckedPopupMenuItem<_PreviewSearchFilter>(
+                      value: _PreviewSearchFilter.containingPackage,
+                      checked: widget
+                          .controller
+                          .searchByContainingPackageListenable
+                          .value,
+                      child: const Text('Containing package'),
+                    ),
+                  ];
+                },
+              );
+            },
+          ),
+        ],
       ),
     );
   }
