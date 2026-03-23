@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 import 'theme/theme.dart';
 import 'utils.dart';
@@ -13,6 +14,20 @@ enum _PreviewSearchFilter {
   previewName,
   containingScript,
   containingPackage,
+}
+
+class _SearchFilterConfig {
+  const _SearchFilterConfig({
+    required this.filter,
+    required this.label,
+    required this.listenable,
+    required this.onToggle,
+  });
+
+  final _PreviewSearchFilter filter;
+  final String label;
+  final ValueListenable<bool> listenable;
+  final VoidCallback onToggle;
 }
 
 /// Provides controls to change the zoom level of a [WidgetPreview].
@@ -254,6 +269,37 @@ class PreviewSearchControls extends StatefulWidget {
 class _PreviewSearchControlsState extends State<PreviewSearchControls> {
   late final TextEditingController _searchController;
 
+  List<_SearchFilterConfig> _searchFilters(
+    WidgetPreviewScaffoldController controller,
+  ) {
+    return <_SearchFilterConfig>[
+      _SearchFilterConfig(
+        filter: _PreviewSearchFilter.groupName,
+        label: 'Group name',
+        listenable: controller.searchByGroupNameListenable,
+        onToggle: controller.toggleSearchByGroupName,
+      ),
+      _SearchFilterConfig(
+        filter: _PreviewSearchFilter.previewName,
+        label: 'Preview name',
+        listenable: controller.searchByPreviewNameListenable,
+        onToggle: controller.toggleSearchByPreviewName,
+      ),
+      _SearchFilterConfig(
+        filter: _PreviewSearchFilter.containingScript,
+        label: 'Containing script',
+        listenable: controller.searchByContainingScriptListenable,
+        onToggle: controller.toggleSearchByContainingScript,
+      ),
+      _SearchFilterConfig(
+        filter: _PreviewSearchFilter.containingPackage,
+        label: 'Containing package',
+        listenable: controller.searchByContainingPackageListenable,
+        onToggle: controller.toggleSearchByContainingPackage,
+      ),
+    ];
+  }
+
   @override
   void initState() {
     super.initState();
@@ -305,6 +351,7 @@ class _PreviewSearchControlsState extends State<PreviewSearchControls> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final searchFilters = _searchFilters(widget.controller);
 
     return _ControlDecorator(
       child: Row(
@@ -359,18 +406,15 @@ class _PreviewSearchControlsState extends State<PreviewSearchControls> {
           ),
           Container(height: 16, width: 1, color: Colors.black26),
           ListenableBuilder(
-            listenable: Listenable.merge(<Listenable>[
-              widget.controller.searchByGroupNameListenable,
-              widget.controller.searchByPreviewNameListenable,
-              widget.controller.searchByContainingScriptListenable,
-              widget.controller.searchByContainingPackageListenable,
-            ]),
+            listenable: Listenable.merge(
+              searchFilters
+                  .map<Listenable>((filter) => filter.listenable)
+                  .toList(growable: false),
+            ),
             builder: (context, _) {
-              final allFiltersEnabled =
-                  widget.controller.searchByGroupNameListenable.value &&
-                  widget.controller.searchByPreviewNameListenable.value &&
-                  widget.controller.searchByContainingScriptListenable.value &&
-                  widget.controller.searchByContainingPackageListenable.value;
+              final allFiltersEnabled = searchFilters.every(
+                (filter) => filter.listenable.value,
+              );
               return PopupMenuButton<_PreviewSearchFilter>(
                 tooltip: 'Search fields',
                 style: theme.iconButtonTheme.style,
@@ -378,50 +422,20 @@ class _PreviewSearchControlsState extends State<PreviewSearchControls> {
                 iconSize: defaultIconSize,
                 icon: const Icon(Icons.filter_list),
                 onSelected: (_PreviewSearchFilter selected) {
-                  switch (selected) {
-                    case _PreviewSearchFilter.groupName:
-                      widget.controller.toggleSearchByGroupName();
-                    case _PreviewSearchFilter.previewName:
-                      widget.controller.toggleSearchByPreviewName();
-                    case _PreviewSearchFilter.containingScript:
-                      widget.controller.toggleSearchByContainingScript();
-                    case _PreviewSearchFilter.containingPackage:
-                      widget.controller.toggleSearchByContainingPackage();
-                  }
+                  searchFilters
+                      .firstWhere((filter) => filter.filter == selected)
+                      .onToggle();
                 },
                 itemBuilder: (context) {
-                  return [
-                    CheckedPopupMenuItem<_PreviewSearchFilter>(
-                      value: _PreviewSearchFilter.groupName,
-                      checked:
-                          widget.controller.searchByGroupNameListenable.value,
-                      child: const Text('Group name'),
-                    ),
-                    CheckedPopupMenuItem<_PreviewSearchFilter>(
-                      value: _PreviewSearchFilter.previewName,
-                      checked: widget
-                          .controller
-                          .searchByPreviewNameListenable
-                          .value,
-                      child: const Text('Preview name'),
-                    ),
-                    CheckedPopupMenuItem<_PreviewSearchFilter>(
-                      value: _PreviewSearchFilter.containingScript,
-                      checked: widget
-                          .controller
-                          .searchByContainingScriptListenable
-                          .value,
-                      child: const Text('Containing script'),
-                    ),
-                    CheckedPopupMenuItem<_PreviewSearchFilter>(
-                      value: _PreviewSearchFilter.containingPackage,
-                      checked: widget
-                          .controller
-                          .searchByContainingPackageListenable
-                          .value,
-                      child: const Text('Containing package'),
-                    ),
-                  ];
+                  return searchFilters
+                      .map(
+                        (filter) => CheckedPopupMenuItem<_PreviewSearchFilter>(
+                          value: filter.filter,
+                          checked: filter.listenable.value,
+                          child: Text(filter.label),
+                        ),
+                      )
+                      .toList(growable: false);
                 },
               );
             },

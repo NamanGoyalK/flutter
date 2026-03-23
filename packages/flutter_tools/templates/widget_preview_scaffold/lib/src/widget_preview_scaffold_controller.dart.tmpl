@@ -55,10 +55,9 @@ class WidgetPreviewScaffoldController {
     _layoutType.dispose();
     _filterBySelectedFile.dispose();
     _searchQuery.dispose();
-    _searchByGroupName.dispose();
-    _searchByPreviewName.dispose();
-    _searchByContainingScript.dispose();
-    _searchByContainingPackage.dispose();
+    for (final searchField in _getSearchFields()) {
+      searchField.dispose();
+    }
   }
 
   /// Update state after the project has been reassembled due to a hot reload.
@@ -168,12 +167,40 @@ class WidgetPreviewScaffoldController {
     );
     filterBySelectedFileListenable.addListener(_updateFilteredPreviewSet);
     searchQueryListenable.addListener(_updateFilteredPreviewSet);
-    searchByGroupNameListenable.addListener(_updateFilteredPreviewSet);
-    searchByPreviewNameListenable.addListener(_updateFilteredPreviewSet);
-    searchByContainingScriptListenable.addListener(_updateFilteredPreviewSet);
-    searchByContainingPackageListenable.addListener(_updateFilteredPreviewSet);
+    for (final searchField in _getSearchFields()) {
+      searchField.addListener(_updateFilteredPreviewSet);
+    }
     // Set the initial state.
     _updateFilteredPreviewSet();
+  }
+
+  List<ValueNotifier<bool>> _getSearchFields() {
+    return <ValueNotifier<bool>>[
+      _searchByGroupName,
+      _searchByPreviewName,
+      _searchByContainingScript,
+      _searchByContainingPackage,
+    ];
+  }
+
+  String _getSearchableValue(
+    WidgetPreview preview,
+    ValueNotifier<bool> searchField,
+  ) {
+    if (identical(searchField, _searchByGroupName)) {
+      return preview.previewData.group.toLowerCase();
+    }
+    if (identical(searchField, _searchByPreviewName)) {
+      return (preview.name ?? '').toLowerCase();
+    }
+    if (identical(searchField, _searchByContainingScript)) {
+      return preview.scriptUri.toLowerCase();
+    }
+    if (identical(searchField, _searchByContainingPackage)) {
+      return preview.packageName.toLowerCase();
+    }
+
+    throw StateError('Unknown search field');
   }
 
   void _toggleSearchField(ValueNotifier<bool> searchField) {
@@ -184,12 +211,9 @@ class WidgetPreviewScaffoldController {
   }
 
   bool _hasAnotherActiveSearchField(ValueNotifier<bool> activeSearchField) {
-    return <ValueNotifier<bool>>[
-      _searchByGroupName,
-      _searchByPreviewName,
-      _searchByContainingScript,
-      _searchByContainingPackage,
-    ].any((field) => !identical(field, activeSearchField) && field.value);
+    return _getSearchFields().any(
+      (field) => !identical(field, activeSearchField) && field.value,
+    );
   }
 
   bool _matchesSearchFilter(WidgetPreview preview, String searchQuery) {
@@ -197,25 +221,13 @@ class WidgetPreviewScaffoldController {
       return true;
     }
 
-    final normalizedGroupName = preview.previewData.group.toLowerCase();
-    final normalizedPreviewName = (preview.name ?? '').toLowerCase();
-    final normalizedScriptUri = preview.scriptUri.toLowerCase();
-    final normalizedPackageName = preview.packageName.toLowerCase();
-
-    if (_searchByGroupName.value && normalizedGroupName.contains(searchQuery)) {
-      return true;
-    }
-    if (_searchByPreviewName.value &&
-        normalizedPreviewName.contains(searchQuery)) {
-      return true;
-    }
-    if (_searchByContainingScript.value &&
-        normalizedScriptUri.contains(searchQuery)) {
-      return true;
-    }
-    if (_searchByContainingPackage.value &&
-        normalizedPackageName.contains(searchQuery)) {
-      return true;
+    for (final searchField in _getSearchFields()) {
+      if (!searchField.value) {
+        continue;
+      }
+      if (_getSearchableValue(preview, searchField).contains(searchQuery)) {
+        return true;
+      }
     }
 
     return false;
