@@ -394,7 +394,6 @@ class _PreviewSearchControlsState extends State<PreviewSearchControls> {
                         icon: Icon(Icons.clear, size: defaultIconSize),
                         color: Colors.black,
                         onPressed: () {
-                          _searchController.clear();
                           widget.controller.updateSearchQuery('');
                         },
                       );

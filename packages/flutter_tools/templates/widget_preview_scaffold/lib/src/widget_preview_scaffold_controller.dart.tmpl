@@ -287,6 +287,6 @@ class WidgetPreviewScaffoldController {
           .previews
           .add(preview);
     }
-    _filteredPreviewSet.value = previewGroups.values;
+    _filteredPreviewSet.value = previewGroups.values.toList();
   }
 }
