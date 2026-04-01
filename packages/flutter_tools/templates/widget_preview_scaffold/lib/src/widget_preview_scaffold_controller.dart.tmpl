@@ -55,15 +55,13 @@ class WidgetPreviewScaffoldController {
     _layoutType.dispose();
     _filterBySelectedFile.dispose();
     _searchQuery.dispose();
-    for (final searchField in _getSearchFields()) {
+    for (final searchField in _searchFields) {
       searchField.dispose();
     }
   }
 
   /// Update state after the project has been reassembled due to a hot reload.
-  void onHotReload() {
-    _updateFilteredPreviewSet();
-  }
+  void onHotReload() => _updateFilteredPreviewSet();
 
   /// The active DTD connection used to communicate with other developer tooling.
   final WidgetPreviewScaffoldDtdServices dtdServices;
@@ -103,9 +101,7 @@ class WidgetPreviewScaffoldController {
   final _searchQuery = ValueNotifier<String>('');
 
   /// Update the search query used to filter previews.
-  void updateSearchQuery(String query) {
-    _searchQuery.value = query;
-  }
+  void updateSearchQuery(String query) => _searchQuery.value = query;
 
   /// Whether to include group names when applying search filters.
   ValueListenable<bool> get searchByGroupNameListenable => _searchByGroupName;
@@ -127,33 +123,34 @@ class WidgetPreviewScaffoldController {
   final _searchByContainingPackage = ValueNotifier<bool>(true);
 
   /// Toggle inclusion of group names in search filters.
-  void toggleSearchByGroupName() {
-    _toggleSearchField(_searchByGroupName);
-  }
+  ///
+  /// Returns true if the filter state was changed.
+  bool toggleSearchByGroupName() => _toggleSearchField(_searchByGroupName);
 
   /// Toggle inclusion of preview names in search filters.
-  void toggleSearchByPreviewName() {
-    _toggleSearchField(_searchByPreviewName);
-  }
+  ///
+  /// Returns true if the filter state was changed.
+  bool toggleSearchByPreviewName() => _toggleSearchField(_searchByPreviewName);
 
   /// Toggle inclusion of script URIs in search filters.
-  void toggleSearchByContainingScript() {
-    _toggleSearchField(_searchByContainingScript);
-  }
+  ///
+  /// Returns true if the filter state was changed.
+  bool toggleSearchByContainingScript() =>
+      _toggleSearchField(_searchByContainingScript);
 
   /// Toggle inclusion of package names in search filters.
-  void toggleSearchByContainingPackage() {
-    _toggleSearchField(_searchByContainingPackage);
-  }
+  ///
+  /// Returns true if the filter state was changed.
+  bool toggleSearchByContainingPackage() =>
+      _toggleSearchField(_searchByContainingPackage);
 
   /// Specifies if the DevTools Widget Inspector should be visible.
   ValueListenable<bool> get widgetInspectorVisible => _widgetInspectorVisible;
   final _widgetInspectorVisible = ValueNotifier<bool>(false);
 
   /// Enable or disable the DevTools Widget Inspector.
-  void toggleWidgetInspectorVisible() {
-    _widgetInspectorVisible.value = !_widgetInspectorVisible.value;
-  }
+  void toggleWidgetInspectorVisible() =>
+      _widgetInspectorVisible.value = !_widgetInspectorVisible.value;
 
   /// The current set of previews to be displayed.
   ValueListenable<WidgetPreviewGroups> get filteredPreviewSetListenable =>
@@ -167,21 +164,19 @@ class WidgetPreviewScaffoldController {
     );
     filterBySelectedFileListenable.addListener(_updateFilteredPreviewSet);
     searchQueryListenable.addListener(_updateFilteredPreviewSet);
-    for (final searchField in _getSearchFields()) {
+    for (final searchField in _searchFields) {
       searchField.addListener(_updateFilteredPreviewSet);
     }
     // Set the initial state.
     _updateFilteredPreviewSet();
   }
 
-  List<ValueNotifier<bool>> _getSearchFields() {
-    return <ValueNotifier<bool>>[
-      _searchByGroupName,
-      _searchByPreviewName,
-      _searchByContainingScript,
-      _searchByContainingPackage,
-    ];
-  }
+  late final List<ValueNotifier<bool>> _searchFields = <ValueNotifier<bool>>[
+    _searchByGroupName,
+    _searchByPreviewName,
+    _searchByContainingScript,
+    _searchByContainingPackage,
+  ];
 
   String _getSearchableValue(
     WidgetPreview preview,
@@ -203,25 +198,25 @@ class WidgetPreviewScaffoldController {
     throw StateError('Unknown search field');
   }
 
-  void _toggleSearchField(ValueNotifier<bool> searchField) {
+  bool _toggleSearchField(ValueNotifier<bool> searchField) {
     if (searchField.value && !_hasAnotherActiveSearchField(searchField)) {
-      return;
+      return false;
     }
     searchField.value = !searchField.value;
+    return true;
   }
 
-  bool _hasAnotherActiveSearchField(ValueNotifier<bool> activeSearchField) {
-    return _getSearchFields().any(
-      (field) => !identical(field, activeSearchField) && field.value,
-    );
-  }
+  bool _hasAnotherActiveSearchField(ValueNotifier<bool> activeSearchField) =>
+      _searchFields.any(
+        (field) => !identical(field, activeSearchField) && field.value,
+      );
 
   bool _matchesSearchFilter(WidgetPreview preview, String searchQuery) {
     if (searchQuery.isEmpty) {
       return true;
     }
 
-    for (final searchField in _getSearchFields()) {
+    for (final searchField in _searchFields) {
       if (!searchField.value) {
         continue;
       }
