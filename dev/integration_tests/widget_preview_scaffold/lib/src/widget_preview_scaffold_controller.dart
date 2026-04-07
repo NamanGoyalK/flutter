@@ -171,7 +171,7 @@ class WidgetPreviewScaffoldController {
     _updateFilteredPreviewSet();
   }
 
-  late final List<ValueNotifier<bool>> _searchFields = <ValueNotifier<bool>>[
+  late final _searchFields = <ValueNotifier<bool>>[
     _searchByGroupName,
     _searchByPreviewName,
     _searchByContainingScript,

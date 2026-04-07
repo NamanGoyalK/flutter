@@ -48,29 +48,34 @@ class _PreviewNameSearchFilter extends _SearchFilterConfig {
     : super(_PreviewSearchFilter.previewName, controller);
 
   @override
-  ValueListenable<bool> listenable() => _controller.searchByPreviewNameListenable;
+  ValueListenable<bool> listenable() =>
+      _controller.searchByPreviewNameListenable;
 
   @override
   bool onToggle() => _controller.toggleSearchByPreviewName();
 }
 
 class _ContainingScriptSearchFilter extends _SearchFilterConfig {
-  const _ContainingScriptSearchFilter(WidgetPreviewScaffoldController controller)
-    : super(_PreviewSearchFilter.containingScript, controller);
+  const _ContainingScriptSearchFilter(
+    WidgetPreviewScaffoldController controller,
+  ) : super(_PreviewSearchFilter.containingScript, controller);
 
   @override
-  ValueListenable<bool> listenable() => _controller.searchByContainingScriptListenable;
+  ValueListenable<bool> listenable() =>
+      _controller.searchByContainingScriptListenable;
 
   @override
   bool onToggle() => _controller.toggleSearchByContainingScript();
 }
 
 class _ContainingPackageSearchFilter extends _SearchFilterConfig {
-  const _ContainingPackageSearchFilter(WidgetPreviewScaffoldController controller)
-    : super(_PreviewSearchFilter.containingPackage, controller);
+  const _ContainingPackageSearchFilter(
+    WidgetPreviewScaffoldController controller,
+  ) : super(_PreviewSearchFilter.containingPackage, controller);
 
   @override
-  ValueListenable<bool> listenable() => _controller.searchByContainingPackageListenable;
+  ValueListenable<bool> listenable() =>
+      _controller.searchByContainingPackageListenable;
 
   @override
   bool onToggle() => _controller.toggleSearchByContainingPackage();
@@ -151,7 +156,10 @@ class _ControlDecorator extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.all(densePadding),
-      decoration: BoxDecoration(color: Colors.grey[300], borderRadius: defaultBorderRadius),
+      decoration: BoxDecoration(
+        color: Colors.grey[300],
+        borderRadius: defaultBorderRadius,
+      ),
       child: child,
     );
   }
@@ -177,13 +185,17 @@ class LayoutTypeSelector extends StatelessWidget {
                 visualDensity: VisualDensity.compact,
                 onPressed: () => controller.layoutType = LayoutType.gridView,
                 icon: Icon(Icons.grid_on),
-                color: selectedLayout == LayoutType.gridView ? Colors.blue : Colors.black,
+                color: selectedLayout == LayoutType.gridView
+                    ? Colors.blue
+                    : Colors.black,
               ),
               IconButton(
                 onPressed: () => controller.layoutType = LayoutType.listView,
                 visualDensity: VisualDensity.compact,
                 icon: Icon(Icons.view_list),
-                color: selectedLayout == LayoutType.listView ? Colors.blue : Colors.black,
+                color: selectedLayout == LayoutType.listView
+                    ? Colors.blue
+                    : Colors.black,
               ),
             ],
           );
@@ -322,8 +334,12 @@ class _PreviewSearchControlsState extends State<PreviewSearchControls> {
       _ContainingScriptSearchFilter(widget.controller),
       _ContainingPackageSearchFilter(widget.controller),
     ];
-    _searchController = TextEditingController(text: widget.controller.searchQueryListenable.value);
-    widget.controller.searchQueryListenable.addListener(_syncControllerQueryToTextField);
+    _searchController = TextEditingController(
+      text: widget.controller.searchQueryListenable.value,
+    );
+    widget.controller.searchQueryListenable.addListener(
+      _syncControllerQueryToTextField,
+    );
   }
 
   @override
@@ -332,8 +348,12 @@ class _PreviewSearchControlsState extends State<PreviewSearchControls> {
     if (identical(oldWidget.controller, widget.controller)) {
       return;
     }
-    oldWidget.controller.searchQueryListenable.removeListener(_syncControllerQueryToTextField);
-    widget.controller.searchQueryListenable.addListener(_syncControllerQueryToTextField);
+    oldWidget.controller.searchQueryListenable.removeListener(
+      _syncControllerQueryToTextField,
+    );
+    widget.controller.searchQueryListenable.addListener(
+      _syncControllerQueryToTextField,
+    );
     _searchFilters
       ..clear()
       ..addAll(<_SearchFilterConfig>[
@@ -347,7 +367,9 @@ class _PreviewSearchControlsState extends State<PreviewSearchControls> {
 
   @override
   void dispose() {
-    widget.controller.searchQueryListenable.removeListener(_syncControllerQueryToTextField);
+    widget.controller.searchQueryListenable.removeListener(
+      _syncControllerQueryToTextField,
+    );
     _searchController.dispose();
     super.dispose();
   }
@@ -392,7 +414,11 @@ class _PreviewSearchControlsState extends State<PreviewSearchControls> {
                     vertical: densePadding,
                     horizontal: denseSpacing,
                   ),
-                  prefixIcon: Icon(Icons.search, size: defaultIconSize, color: Colors.black54),
+                  prefixIcon: Icon(
+                    Icons.search,
+                    size: defaultIconSize,
+                    color: Colors.black54,
+                  ),
                   suffixIcon: _SearchClearButton(controller: widget.controller),
                 ),
               ),
@@ -443,10 +469,14 @@ class _SearchFiltersMenuButton extends StatelessWidget {
     final theme = Theme.of(context);
     return ListenableBuilder(
       listenable: Listenable.merge(
-        searchFilters.map<Listenable>((filter) => filter.listenable()).toList(growable: false),
+        searchFilters
+            .map<Listenable>((filter) => filter.listenable())
+            .toList(growable: false),
       ),
       builder: (context, _) {
-        final allFiltersEnabled = searchFilters.every((filter) => filter.listenable().value);
+        final allFiltersEnabled = searchFilters.every(
+          (filter) => filter.listenable().value,
+        );
         return PopupMenuButton<_PreviewSearchFilter>(
           tooltip: 'Search fields',
           style: theme.iconButtonTheme.style,
@@ -482,7 +512,9 @@ class _SearchFiltersMenuButton extends StatelessWidget {
     scaffoldMessenger
       ..hideCurrentSnackBar()
       ..showSnackBar(
-        const SnackBar(content: Text('At least one search field must remain enabled.')),
+        const SnackBar(
+          content: Text('At least one search field must remain enabled.'),
+        ),
       );
   }
 }
